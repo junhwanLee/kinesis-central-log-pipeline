@@ -1,0 +1,36 @@
+version: '3'
+services:
+  web:
+    image: nginx
+    ports:
+      - "80:80"
+    links:
+      - fluentd
+    volumes:
+      - ./nginx/log:/var/log/nginx
+
+  fluentd:
+    build: ./fluentd
+    volumes:
+      - ./fluentd/conf:/fluentd/etc
+      - ./nginx/log:/var/log/nginx
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "443:443"
+      - "4510-4520:4510-4520"
+      - "4566-4615:4566-4615"
+      - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
+    environment:
+      - LOCALSTACK_API_KEY=...
+      - SERVICES=kinesis,lambda,s3,iam
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
